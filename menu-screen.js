@@ -9,16 +9,15 @@
 class MenuScreen {
   constructor(containerElement) {
     this.containerElement = containerElement;
-    const deckContainer = document.querySelector('#choices');
-    for (let key in FLASHCARD_DECKS) {
-       const deck = FLASHCARD_DECKS[key];
-       const text = deck.title;
-       const newDiv = document.createElement('div');
-       this.deckSelected = this.deckSelected.bind(this);
-       newDiv.textContent = text;
-       newDiv.addEventListener('click', this.deckSelected);
-       deckContainer.appendChild(newDiv);
-    }
+	const deck_choice = document.querySelector('#choices');
+	
+	for (const deck of FLASHCARD_DECKS){
+		const choice = document.createElement('div');
+		this.selected = this.selected.bind(this);
+		choice.textContent = deck.title;
+		choice.addEventListener('click', this.selected);
+		deck_choice.appendChild(choice);
+	}
   }
 
   show() {
@@ -28,13 +27,12 @@ class MenuScreen {
   hide() {
     this.containerElement.classList.add('inactive');
   }
-
-  deckSelected(event) {
-    const deck = event.currentTarget;
-    const eventInfo = {
-      title: deck.textContent
+  
+  selected(event){
+	  const current = event.currentTarget;;
+	  const eventInfo = {
+      title:current.textContent
     };
-    document.dispatchEvent(new CustomEvent('deckChosen', {detail: eventInfo}));
+    document.dispatchEvent(new CustomEvent('choose_deck', {detail:eventInfo} ) );
   }
-
 }

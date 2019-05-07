@@ -8,101 +8,26 @@
 
 class Flashcard {
   constructor(containerElement, frontText, backText) {
-    let key = 0;
     this.containerElement = containerElement;
+	this.origin_X = 0;
+	this.origin_Y = 0;
+	this.current_X = 0;
+	this.current_Y = 0;
+	this.drag = false;
+	this.front = frontText;
+	this.back = backText;
+	this.flip = 0;
+	
+    this._flipCard = this._flipCard.bind(this);
 
     this.flashcardElement = this._createFlashcardDOM(frontText, backText);
-
-    this.word = frontText;
-    this.def = backText;
-
-    this.originX = null;
-    this.originY = null;
-    this.offsetX = 0;
-    this.offsetY = 0;
-    this.dragStarted = false;
-    this._flipCard = this._flipCard.bind(this);
-    this.onDragStart = this.onDragStart.bind(this);
-    this.onDragEnd = this.onDragEnd.bind(this);
-    this.onDragMove = this.onDragMove.bind(this);
-    this.flashcardElement.addEventListener('click', this._flipCard);
-    this.flashcardElement.addEventListener('pointerdown', this.onDragStart);
-    this.flashcardElement.addEventListener('pointerup', this.onDragEnd);
-    this.flashcardElement.addEventListener('pointermove', this.onDragMove);
-  }
-
-  onDragStart() {
-    this.originX = event.clientX;
-    this.originY = event.clientY;
-    this.dragStarted = true;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    event.currentTarget.style.transition = "0s";
-  }
-
-  onDragMove(event) {
-    if (!this.dragStarted) {
-      return;
-    }
-    event.preventDefault();
-    const deltaX = event.clientX - this.originX;
-    const deltaY = event.clientY - this.originY;
-    const translateX = deltaX;
-    const translateY = deltaY;
-    const rotation = 0.2*deltaX;
-
-    event.currentTarget.style.transform = 'translate(' +
-    translateX + 'px, ' + translateY + 'px)' + 'rotate(' + rotation + 'deg)';
-
-    const body = document.querySelector('body');
-
-    if (deltaX >= 150) {
-      const eventInfo = {
-        correct: 1
-      };
-      body.style.backgroundColor = '#97b7b7';
-      document.dispatchEvent(new CustomEvent('updateTemp', {detail: eventInfo}));
-    } else if (deltaX <= -150) {
-      const eventInfo = {
-        correct: 2
-      };
-      body.style.backgroundColor = '#97b7b7';
-      document.dispatchEvent(new CustomEvent('updateTemp', {detail: eventInfo}));
-    } else {
-      const eventInfo = {
-        correct: 3
-      };
-      body.style.backgroundColor = '#d0e6df';
-      document.dispatchEvent(new CustomEvent('updateTemp', {detail: eventInfo}));
-    }
-  }
-
-  onDragEnd(event) {
-    const body = document.querySelector('body');
-    body.style.backgroundColor = '#d0e6df';
-    this.dragStarted = false;
-    this.offsetX = event.clientX - this.originX;
-    this.offsetY = event.clientY - this.originY;
-    if (this.offsetX >= 150) {
-      const eventInfo = {
-        word: this.word,
-        correct: true
-      };
-      document.dispatchEvent(new CustomEvent('update', {detail: eventInfo}));
-      document.dispatchEvent(new CustomEvent('updateDeck', {detail: eventInfo}));
-    } else if (this.offsetX <= -150) {
-      const eventInfo = {
-        word: this.word,
-        correct: false
-      };
-      event.currentTarget.style.transform = 'translate(' +
-       0 + 'px, ' + 0 + 'px)';
-      document.dispatchEvent(new CustomEvent('update', {detail: eventInfo}));
-      document.dispatchEvent(new CustomEvent('updateDeck', {detail: eventInfo}));
-    } else {
-      event.currentTarget.style.transition = "0.6s";
-      event.currentTarget.style.transform = 'translate(' +
-       0 + 'px, ' + 0 + 'px)';
-    }
+	
+	this._pointer_down = this._pointer_down.bind(this);
+    this.flashcardElement.addEventListener('pointerdown', this._pointer_down);
+	this._pointer_up = this._pointer_up.bind(this);
+    this.flashcardElement.addEventListener('pointerup', this._pointer_up);
+	this._pointer_move = this._pointer_move.bind(this);
+    this.flashcardElement.addEventListener('pointermove', this._pointer_move);
   }
 
   // Creates the DOM object representing a flashcard with the given
@@ -140,6 +65,82 @@ class Flashcard {
 
   _flipCard(event) {
     this.flashcardElement.classList.toggle('show-word');
+	this.flip++;
   }
-
+  
+  _pointer_down(event){
+	  this.origin_X = event.clientX;
+	  this.origin_Y = event.clientY;
+	  this.drag = true;
+	  event.target.setPointerCapture(event.pointerId);
+	  event.currentTarget.style.transition = "0s";
+  }
+  
+  _pointer_up(event){
+	  this.drag = false;
+	  document.querySelector("body").classList.remove('darker_background');
+	  
+	  this.current_X = event.clientX - this.origin_X;
+	  this.current_Y = event.clientY - this.origin_Y;
+	  
+	  if(this.current_X >= 150){
+		  const eventInfo = {
+			  word:this.front,
+			  right:1
+		  };
+		  document.dispatchEvent(new CustomEvent('update_status', {detail:eventInfo} ) );
+		  document.dispatchEvent(new CustomEvent('change_card', {detail:eventInfo} ) );
+	  }
+	  else if(this.current_X <= -150){
+		  const eventInfo = {
+			  word:this.front,
+			  right:-1
+		  };
+		  
+		  if(this.flip % 2 == 1 ) { this._flipCard(event); }
+		  event.currentTarget.style.transition = "0s";
+		  event.currentTarget.style.transform = 'translateX(' + 0 + 'px)' + 'translateY(' + 0 + 'px)';
+		  
+		  document.dispatchEvent(new CustomEvent('update_status', {detail:eventInfo} ) );
+		  document.dispatchEvent(new CustomEvent('change_card', {detail:eventInfo} ) );
+	  }
+	  else{
+		  this._flipCard(event);
+		  event.currentTarget.style.transition = "0.6s";
+		  event.currentTarget.style.transform = 'translateX(' + 0 + 'px)' + 'translateY(' + 0 + 'px)';
+	  }
+  }
+  
+  _pointer_move(event){
+	  if(!this.drag){ return; }
+	  event.preventDefault();
+	  
+	  const direction_X = event.clientX - this.origin_X;
+	  const direction_Y = event.clientY - this.origin_Y;
+	  const rotate = 0.2 * direction_X;
+	  
+	  event.currentTarget.style.transform = 'translateX(' + direction_X + 'px)' + 'translateY(' + direction_Y + 'px)' + 'rotate(' + rotate + 'deg)';
+	  
+	  if(direction_X >= 150){
+		  document.querySelector("body").classList.add('darker_background');
+		  const eventInfo = {
+			  right:1
+		  };
+		  document.dispatchEvent(new CustomEvent('status_tmp', {detail:eventInfo} ) );
+	  }
+	  else if(direction_X <= -150){
+		  document.querySelector("body").classList.add('darker_background');
+		  const eventInfo = {
+			  right:-1
+		  };
+		  document.dispatchEvent(new CustomEvent('status_tmp', {detail:eventInfo} ) );
+	  }
+	  else{
+		  document.querySelector("body").classList.remove('darker_background');
+		  const eventInfo = {
+			  right:0
+		  };
+		  document.dispatchEvent(new CustomEvent('status_tmp', {detail:eventInfo} ) );
+	  }
+  }
 }

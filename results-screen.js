@@ -9,68 +9,51 @@
 class ResultsScreen {
   constructor(containerElement) {
     this.containerElement = containerElement;
-    this.startOver = this.startOver.bind(this);
-    this.Continue = this.Continue.bind(this);
-    this.toMenu = this.toMenu.bind(this);
-    this.reset = this.reset.bind(this);
-    document.addEventListener('reset', this.rest);
-  }
-
-  reset() {
-    const startOver = document.querySelector('#results .continue');
-    startOver.removeEventListener('click', this.startOver);
-    startOver.removeEventListener('click', this.Continue);
   }
 
   show(numberCorrect, numberWrong) {
     this.containerElement.classList.remove('inactive');
-
-    this.percentCorrect = document.querySelector('#results .percent');
-    this.correct = document.querySelector('#results .correct');
-    this.wrong = document.querySelector('#results .incorrect');
-
-    const percentage = Math.ceil((numberCorrect/(numberCorrect+numberWrong))*100);
-    this.percentCorrect.textContent = percentage + ' ';
-    this.correct.textContent = numberCorrect + ' ';
-    this.wrong.textContent = numberWrong + ' ';
-
-    const toMenu = document.querySelector('#results .to-menu');
-    toMenu.addEventListener('click', this.toMenu);
-
-    if (percentage === 100) {
-      const startOver = document.querySelector('#results .continue');
-      startOver.textContent = 'Start Over?';
-      startOver.addEventListener('click', this.startOver);
-    } else {
-      const Continue = document.querySelector('#results .continue');
-      Continue.textContent = 'Continue';
-      Continue.addEventListener('click', this.Continue);
-    }
-
+	const percent = document.querySelector('#results .percent');
+	const right = document.querySelector('#results .correct');
+	const wrong = document.querySelector('#results .incorrect');
+	if(numberWrong == 0){
+		percent.textContent = 100;
+	}
+	else{
+		percent.textContent = Math.round( numberCorrect * 100 / (numberCorrect + numberWrong) );
+	}
+	right.textContent = numberCorrect;
+	wrong.textContent = numberWrong;
+	
+	if(numberWrong == 0){
+		const start_over = document.querySelector('#results .continue');
+		start_over.textContent = "Start Over?";
+		start_over.addEventListener('click', this.click_start_over);
+		start_over.removeEventListener('click', this.click_continue);
+	}
+	else{
+		const _continue = document.querySelector('#results .continue');
+		_continue.textContent = "Continue";
+		_continue.addEventListener('click', this.click_continue);
+		_continue.removeEventListener('click', this.click_start_over);
+	}
+	const to_menu = document.querySelector('#results .to-menu');
+	to_menu.addEventListener('click', this.click_to_menu);
   }
-
-  toMenu() {
-    const toMenu = document.querySelector('#results .to-menu');
-    toMenu.removeEventListener('click', this.toMenu);
-    this.reset();
-    document.dispatchEvent(new CustomEvent('toMenu'));
-  }
-
-  Continue() {
-    const Continue = document.querySelector('#results .continue');
-    Continue.removeEventListener('click', this.Continue);
-    this.reset();
-    document.dispatchEvent(new CustomEvent('continue'));
-  }
-
- startOver() {
-   const startOver = document.querySelector('#results .continue');
-   startOver.removeEventListener('click', this.startOver);
-   this.reset();
-   document.dispatchEvent(new CustomEvent('doOver'));
- }
 
   hide() {
     this.containerElement.classList.add('inactive');
+  }
+  
+  click_start_over(event){
+	  document.dispatchEvent(new CustomEvent('start_over') );
+  }
+  
+  click_to_menu(event){
+	  document.dispatchEvent(new CustomEvent('to_menu') );
+  }
+  
+  click_continue(event){
+	  document.dispatchEvent(new CustomEvent('_continue') );
   }
 }
