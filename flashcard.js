@@ -8,14 +8,101 @@
 
 class Flashcard {
   constructor(containerElement, frontText, backText) {
+    let key = 0;
     this.containerElement = containerElement;
 
-    this._flipCard = this._flipCard.bind(this);
-
     this.flashcardElement = this._createFlashcardDOM(frontText, backText);
-    this.containerElement.append(this.flashcardElement);
 
-    this.flashcardElement.addEventListener('pointerup', this._flipCard);
+    this.word = frontText;
+    this.def = backText;
+
+    this.originX = null;
+    this.originY = null;
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.dragStarted = false;
+    this._flipCard = this._flipCard.bind(this);
+    this.onDragStart = this.onDragStart.bind(this);
+    this.onDragEnd = this.onDragEnd.bind(this);
+    this.onDragMove = this.onDragMove.bind(this);
+    this.flashcardElement.addEventListener('click', this._flipCard);
+    this.flashcardElement.addEventListener('pointerdown', this.onDragStart);
+    this.flashcardElement.addEventListener('pointerup', this.onDragEnd);
+    this.flashcardElement.addEventListener('pointermove', this.onDragMove);
+  }
+
+  onDragStart() {
+    this.originX = event.clientX;
+    this.originY = event.clientY;
+    this.dragStarted = true;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.currentTarget.style.transition = "0s";
+  }
+
+  onDragMove(event) {
+    if (!this.dragStarted) {
+      return;
+    }
+    event.preventDefault();
+    const deltaX = event.clientX - this.originX;
+    const deltaY = event.clientY - this.originY;
+    const translateX = deltaX;
+    const translateY = deltaY;
+    const rotation = 0.2*deltaX;
+
+    event.currentTarget.style.transform = 'translate(' +
+    translateX + 'px, ' + translateY + 'px)' + 'rotate(' + rotation + 'deg)';
+
+    const body = document.querySelector('body');
+
+    if (deltaX >= 150) {
+      const eventInfo = {
+        correct: 1
+      };
+      body.style.backgroundColor = '#97b7b7';
+      document.dispatchEvent(new CustomEvent('updateTemp', {detail: eventInfo}));
+    } else if (deltaX <= -150) {
+      const eventInfo = {
+        correct: 2
+      };
+      body.style.backgroundColor = '#97b7b7';
+      document.dispatchEvent(new CustomEvent('updateTemp', {detail: eventInfo}));
+    } else {
+      const eventInfo = {
+        correct: 3
+      };
+      body.style.backgroundColor = '#d0e6df';
+      document.dispatchEvent(new CustomEvent('updateTemp', {detail: eventInfo}));
+    }
+  }
+
+  onDragEnd(event) {
+    const body = document.querySelector('body');
+    body.style.backgroundColor = '#d0e6df';
+    this.dragStarted = false;
+    this.offsetX = event.clientX - this.originX;
+    this.offsetY = event.clientY - this.originY;
+    if (this.offsetX >= 150) {
+      const eventInfo = {
+        word: this.word,
+        correct: true
+      };
+      document.dispatchEvent(new CustomEvent('update', {detail: eventInfo}));
+      document.dispatchEvent(new CustomEvent('updateDeck', {detail: eventInfo}));
+    } else if (this.offsetX <= -150) {
+      const eventInfo = {
+        word: this.word,
+        correct: false
+      };
+      event.currentTarget.style.transform = 'translate(' +
+       0 + 'px, ' + 0 + 'px)';
+      document.dispatchEvent(new CustomEvent('update', {detail: eventInfo}));
+      document.dispatchEvent(new CustomEvent('updateDeck', {detail: eventInfo}));
+    } else {
+      event.currentTarget.style.transition = "0.6s";
+      event.currentTarget.style.transform = 'translate(' +
+       0 + 'px, ' + 0 + 'px)';
+    }
   }
 
   // Creates the DOM object representing a flashcard with the given
@@ -54,4 +141,5 @@ class Flashcard {
   _flipCard(event) {
     this.flashcardElement.classList.toggle('show-word');
   }
+
 }
